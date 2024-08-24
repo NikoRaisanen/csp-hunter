@@ -1,9 +1,42 @@
 import requests
-import re
-import regexes
+import json
 from pprint import pprint
+import boto3
+from botocore.exceptions import ClientError
 
+ACCESS_KEY = None
+SECRET_KEY = None
+with open('./secrets.json', 'r') as fp:
+    data = json.load(fp)
+    ACCESS_KEY = data.get('accessKey', '')
+    SECRET_KEY = data.get('secretAccessKey', '')
 
+def check_bucket_exists(bucket_name):
+    """Check if an S3 bucket exists."""
+    # Initialize an S3 client
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=ACCESS_KEY,
+        aws_secret_access_key=SECRET_KEY,
+        region_name='us-west-2'
+    )
+
+    try:
+        bucket_region = s3_client.head_bucket(Bucket=bucket_name).get('BucketRegion')
+
+        print(f"Bucket '{bucket_name}' exists in region {bucket_region}.")
+        return True
+    except ClientError as e:
+        # If a client error is thrown w/ status 404 -> bucket does not exist
+        print('error: ', e)
+        error_code = e.response['Error']['Code']
+        if error_code == '404':
+            print(f"Bucket '{bucket_name}' does not exist.")
+        else:
+            print(f"ClientError: {e}")
+        return False
+    
+# NOTE for v2: Check domain availability: https://docs.aws.amazon.com/Route53/latest/APIReference/API_domains_CheckDomainAvailability.html
 def call_api(url: str):
     r = requests.get(url)
     print("Status:", r.status_code)
@@ -28,28 +61,11 @@ def parse_csp(csp: str):
 
 
 if __name__ == "__main__":
-    # res = regexes.is_virtual_hosted_s3_url('https://mybucket.s3.amazonaws.com/myfolder/myfile.txt')
-    # print(res.groupdict())
-
-    res = regexes.get_s3_match(
-        "http://nikoraisanen.com.s3-website-us-west-1.amazonaws.com/"
-    )
-    print(res.groupdict())
-    # text = [
-    #     "https://mybucket.s3.amazonaws.com/myfolder/myfile.txt",
-    #     "https://s3.us-west-2.amazonaws.com/mybucket/myfolder/myfile.txt",
-    #     "https://my-access-point-123456789012.s3-accesspoint.us-east-1.amazonaws.com/myfolder/myfile.txt",
-    #     "https://my-access-point-123456789012.s3-object-lambda.us-west-1.amazonaws.com/myfolder/myfile.txt",
-    #     "http://mybucket.s3-website.us-east-1.amazonaws.com/myfolder/myfile.txt",
-    #     "https://mycustomdomain.com/myfolder/myfile.txt"
-    # ]
-    # for txt in text:
-    #     val = regexes.get_s3_match(txt)
-    #     if val:
-    #         print(f"{txt} -> {val.groupdict()}\n")
-    # csp = call_api('https://floqast.app')
-    # if not csp:
-    #     raise ValueError('No CSP to evaluate')
-    # parsed_csp = parse_csp(csp)
-    # print("Parsed Content-Security-Policy:")
-    # pprint(parsed_csp)
+    check_bucket_exists('nikoraisanen.com')
+    domain = input()
+    csp = call_api(domain)
+    if not csp:
+        raise ValueError('No CSP to evaluate')
+    parsed_csp = parse_csp(csp)
+    print("Parsed Content-Security-Policy:")
+    pprint(parsed_csp)
