@@ -1,5 +1,6 @@
 import requests
-import os
+import re
+import regexes
 from pprint import pprint
 
 
@@ -25,33 +26,27 @@ def parse_csp(csp: str):
     return csp_dict
 
 
-# TODO: some kind of in memory db could be cool to cache domain availability results for 24 hrs - 1 week
-def domain_is_available(domain: str) -> bool:
-    api_key = os.getenv('WHOIS_API_KEY')
-    if not api_key:
-        raise ValueError('Missing Whois api key')
-    res = requests.get('https://api.whoapi.com', dict(
-        domain=domain,
-        r='taken',
-        apikey=api_key))
-
-    if res.status_code == 200:
-        data = res.json()
-        if int(data['status']) != 0:
-            # api status codes https://whoapi.com/api-documentation/
-            raise ValueError(f"Domain availability lookup failed with status {data['status']}")
-        return True if data['taken'] == '0' else False
-    else:
-        raise Exception('Unexpected status code %d' % res.status_code)
-
-
 if __name__ == '__main__':
-    # csp = call_api('https://nikoraisanen.com')
+    # res = regexes.is_virtual_hosted_s3_url('https://mybucket.s3.amazonaws.com/myfolder/myfile.txt')
+    # print(res.groupdict())
+
+    res = regexes.get_s3_match('http://nikoraisanen.com.s3-website-us-west-1.amazonaws.com/')
+    print(res.groupdict())
+    # text = [
+    #     "https://mybucket.s3.amazonaws.com/myfolder/myfile.txt",
+    #     "https://s3.us-west-2.amazonaws.com/mybucket/myfolder/myfile.txt",
+    #     "https://my-access-point-123456789012.s3-accesspoint.us-east-1.amazonaws.com/myfolder/myfile.txt",
+    #     "https://my-access-point-123456789012.s3-object-lambda.us-west-1.amazonaws.com/myfolder/myfile.txt",
+    #     "http://mybucket.s3-website.us-east-1.amazonaws.com/myfolder/myfile.txt",
+    #     "https://mycustomdomain.com/myfolder/myfile.txt"
+    # ]
+    # for txt in text:
+    #     val = regexes.get_s3_match(txt)
+    #     if val:
+    #         print(f"{txt} -> {val.groupdict()}\n")
+    # csp = call_api('https://floqast.app')
     # if not csp:
     #     raise ValueError('No CSP to evaluate')
     # parsed_csp = parse_csp(csp)
     # print("Parsed Content-Security-Policy:")
     # pprint(parsed_csp)
-
-    data = domain_is_available('nikoraisanen.com')
-    print('Domain available ', data)
