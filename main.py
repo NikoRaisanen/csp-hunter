@@ -6,19 +6,20 @@ from pprint import pprint
 
 def call_api(url: str):
     r = requests.get(url)
-    print('Status:', r.status_code)
-    
+    print("Status:", r.status_code)
+
     # Check if the Content-Security-Policy header exists
-    csp_header = r.headers.get('Content-Security-Policy')
+    csp_header = r.headers.get("Content-Security-Policy")
     return csp_header
 
+
 def parse_csp(csp: str):
-    directives = csp.split(';')
+    directives = csp.split(";")
     csp_dict = {}
-    
+
     for directive in directives:
         if directive.strip():
-            parts = directive.strip().split(' ')
+            parts = directive.strip().split(" ")
             directive_name = parts[0]
             sources = parts[1:] if len(parts) > 1 else []
             csp_dict[directive_name] = sources
@@ -26,11 +27,13 @@ def parse_csp(csp: str):
     return csp_dict
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # res = regexes.is_virtual_hosted_s3_url('https://mybucket.s3.amazonaws.com/myfolder/myfile.txt')
     # print(res.groupdict())
 
-    res = regexes.get_s3_match('http://nikoraisanen.com.s3-website-us-west-1.amazonaws.com/')
+    res = regexes.get_s3_match(
+        "http://nikoraisanen.com.s3-website-us-west-1.amazonaws.com/"
+    )
     print(res.groupdict())
     # text = [
     #     "https://mybucket.s3.amazonaws.com/myfolder/myfile.txt",
